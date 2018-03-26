@@ -5,10 +5,20 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>考勤转指纹</title>
+    <style type="text/css">
+    	.title{
+    		font-size: 36px;
+    	}
+    	.subtitle{
+    		font-size: 14px;
+    		color: red;
+    	}
+    </style>
 </head>
 <body>
 <form action="/download" method="post" enctype="multipart/form-data">
-    <h1>考勤转指纹</h1>
+	
+    <label class='title'>考勤转指纹</label><label class='subtitle'>(日期用文本格式)</label><br/>
     <label>请输入年：</label>
     <input type="text" name="year"><br/>
     <label>请输入月：</label>

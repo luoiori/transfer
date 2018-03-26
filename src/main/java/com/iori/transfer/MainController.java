@@ -1,5 +1,21 @@
 package com.iori.transfer;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -12,13 +28,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.List;
 
 @Controller
 public class MainController {
@@ -101,14 +110,22 @@ public class MainController {
                 Cell dayCell = staffRow.getCell(2+2*j);
                 Day day = new Day();
                 if(dayCell!=null){
-                    dayCell.setCellType(CellType.STRING);
-                    day.setDay(j+1);
-                    day.setAm(dayCell.getStringCellValue());
+                	day.setDay(j+1);
+                	if(dayCell.getCellType()==0 && HSSFDateUtil.isCellDateFormatted(dayCell)) {
+                		day.setAm(formatDate(dayCell.getDateCellValue()));
+                	}else {
+                		dayCell.setCellType(CellType.STRING);
+                		day.setAm(formatDate(dayCell.getStringCellValue()));
+                	}
                 }
                 Cell nextCell = staffRow.getCell(2*j+3);
                 if(nextCell!=null){
-                    nextCell.setCellType(CellType.STRING);
-                    day.setPm(nextCell.getStringCellValue());
+                	if(nextCell.getCellType()==0 && HSSFDateUtil.isCellDateFormatted(nextCell)) {
+                		day.setPm(formatDate(nextCell.getDateCellValue()));
+                	}else {
+	                    nextCell.setCellType(CellType.STRING);
+	                    day.setPm(formatDate(nextCell.getStringCellValue()));
+                	}
                 }
                 staff.getDays().set(j,day);
             }
@@ -116,6 +133,29 @@ public class MainController {
         }
         return staffs;
 
+    }
+    private String formatDate(Date date) {
+    	SimpleDateFormat tf = new SimpleDateFormat("H:m:s");
+    	return tf.format(date);
+    }
+    
+    private String formatDate(String date) {
+    	if(date==null || (date!=null && date=="")) {
+    		return date;
+    	}
+    	SimpleDateFormat sdf = new SimpleDateFormat(getFmt(date));
+    	SimpleDateFormat tf = new SimpleDateFormat("H:m:s");
+    	if(isDate(date)) {
+    		Calendar calendar = Calendar.getInstance();
+    		try {
+				calendar.setTime(sdf.parse(date));
+			} catch (ParseException e) {
+				e.printStackTrace();
+				return date;
+			}
+    		return tf.format(calendar.getTime());
+    	}
+    	return date;
     }
 
     private boolean isNum(String s){
@@ -200,16 +240,31 @@ public class MainController {
         return workbook;
     }
 
-    private boolean isDate(String am) {
-        for(char c:am.toCharArray()){
-            if( !(Character.isDigit(c) || c==':' || c=='.')){
-                return false;
-            }
-        }
+	private boolean isDate(String am) {
 
-       return true;
+		SimpleDateFormat sdf = new SimpleDateFormat(getFmt(am));
+		try {
+			sdf.parse(am);
+		} catch (Exception e) {
+			for (char c : am.toCharArray()) {
+				if (!(Character.isDigit(c) || c == ':' || c == '.')) {
+					return false;
+				}
+			}
 
-    }
+		}
+
+		return true;
+
+	}
+
+	private String getFmt(String am) {
+		String fmt = "H:m:s";
+		if (am.length() > 8) {
+			fmt = "y-M-d H:m:s";
+		}
+		return fmt;
+	}
 
 
 }
